@@ -1,0 +1,40 @@
+<!--
+DEW HEATER (en version)
+Copyright (c) 2021-2022 Società Astronomica G.V. Schiaparelli
+Paolo Galli <paolo97gll@gmail.com>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>MD - Dew heater</title>
+    <link rel="stylesheet" href="static/style.css" type="text/css" media="screen">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.86">
+    <script src="static/frontend-logic.js"></script>
+</head>
+
+<body onload="start();">
+    <div class="segment">
+        <h2>MASCIONI DOME</h2>
+        <h1>Dew heater controller</h1>
+    </div>
+
+    <form>
+        <label><b>AUTOMATIC HANDLING STATUS</b></label>
+        <label id="auto" style="font-size: 16px;">Automatic mode: ND</label>
+        <input id="input-auto" class="gray" type="button" onclick="toggleAuto();" value="Unavailable" disabled>
+    </form>
+
+    <form>
+        <label><b>DEW HEATERS STATUS</b></label>
+        <label id="main" style="font-size: 16px;">Main telescope: ND</label>
+        <input id="input-main" class="gray" type="button" onclick="toggleMain();" value="Unavailable" disabled>
+        <br>
+        <label id="guide" style="font-size: 16px;">Guide telescope: ND</label>
+        <input id="input-guide" class="gray" type="button" onclick="toggleGuide();" value="Unavailable" disabled>
+    </form>
+</body>
+
+</html>

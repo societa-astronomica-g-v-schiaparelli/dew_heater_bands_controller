@@ -1,0 +1,40 @@
+<!--
+DEW HEATER (it version)
+Copyright (c) 2021-2022 Società Astronomica G.V. Schiaparelli
+Paolo Galli <paolo97gll@gmail.com>
+-->
+
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <title>CM - Fasce anticondensa</title>
+    <link rel="stylesheet" href="static/style.css" type="text/css" media="screen">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.86">
+    <script src="static/frontend-logic.js"></script>
+</head>
+
+<body onload="start();">
+    <div class="segment">
+        <h2>CUPOLA MASCIONI</h2>
+        <h1>Controller fasce anticondensa</h1>
+    </div>
+
+    <form>
+        <label><b>STATO GESTIONE AUTOMATICA</b></label>
+        <label id="auto" style="font-size: 16px;">Modalità automatica: ND</label>
+        <input id="input-auto" class="gray" type="button" onclick="toggleAuto();" value="Non disponibile" disabled>
+    </form>
+
+    <form>
+        <label><b>STATO FASCE ANTICONDENSA</b></label>
+        <label id="main" style="font-size: 16px;">Telescopio principale: ND</label>
+        <input id="input-main" class="gray" type="button" onclick="toggleMain();" value="Non disponibile" disabled>
+        <br>
+        <label id="guide" style="font-size: 16px;">Telescopio di guida: ND</label>
+        <input id="input-guide" class="gray" type="button" onclick="toggleGuide();" value="Non disponibile" disabled>
+    </form>
+</body>
+
+</html>

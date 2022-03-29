@@ -1,0 +1,9 @@
+# DEW HEATER
+# Copyright (c) 2021-2022 Società Astronomica G.V. Schiaparelli
+# Paolo Galli <paolo97gll@gmail.com>
+
+aiohttp[speedups] == 3.8.1
+apscheduler == 3.9.1
+numpy == 1.22.3
+RPi.GPIO == 0.7.1
+skyfield == 1.42
