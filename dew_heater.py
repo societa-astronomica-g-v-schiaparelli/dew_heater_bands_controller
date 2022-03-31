@@ -10,14 +10,12 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta
-from pytz import utc
 
 import numpy as np
 import skyfield.almanac
 import skyfield.api
 from aiohttp import ClientSession, web
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from RPi import GPIO
+from gpiozero import DigitalOutputDevice
 
 
 #####################################################################
@@ -29,26 +27,17 @@ logging.basicConfig(
     format="%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
-# set apscheduler executors logger on error and above
-logging.getLogger('apscheduler.executors.default').setLevel(logging.ERROR)
 
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # default to auto handle
 AUTO_UPDATE = True
 
-# dictionary {GPIO_pin: telescope_name}
-RELAY = {2: "main", 3: "guide"}
-# dictionary {GPIO_read: bool}
-STATUS = {0: True, 1: False}
-# aliases for ON and OFF
-ON, OFF = GPIO.LOW, GPIO.HIGH
-
-# setup GPIO
-GPIO.setmode(GPIO.BCM)
-for pin in RELAY:
-    GPIO.setup(pin, GPIO.OUT)
-    GPIO.output(pin, OFF)
+# relay devices
+RELAY = {
+    "main":  DigitalOutputDevice(pin="GPIO2", active_high=False),
+    "guide": DigitalOutputDevice(pin="GPIO3", active_high=False)
+}
 
 # setup CDF location for Sun altitude
 ts_skyfield = skyfield.api.load.timescale()
@@ -82,8 +71,8 @@ async def update_status():
     if AUTO_UPDATE:
         if sun_is_up(ts_skyfield.now()):
             logging.info("System disabled (daily hours)")
-            for pin in RELAY:
-                GPIO.output(pin, OFF)
+            for relay in RELAY.values():
+                relay.off()
         else:
             logging.info("Starting auto update routine")
             try:
@@ -96,20 +85,20 @@ async def update_status():
             except Exception as e:
                 logging.exception(e)
                 logging.info("System disabled (error retriving parameters)")
-                for pin in RELAY:
-                    GPIO.output(pin, OFF)
+                for relay in RELAY.values():
+                    relay.off()
             else:
                 logging.info(f"Temperature: {temperature} °C, Dew Point: {dew_point} °C")
                 delta = temperature - dew_point
                 if delta < TEMPERATURE_THRESHOLD:
                     logging.info("System enabled")
                     DATETIME = datetime.now()
-                    for pin in RELAY:
-                        GPIO.output(pin, ON)
+                    for relay in RELAY.values():
+                        relay.on()
                 elif delta > TEMPERATURE_THRESHOLD and (datetime.now() - DATETIME).seconds > TIME_THRESHOLD:
                     logging.info("System disabled")
-                    for pin in RELAY:
-                        GPIO.output(pin, OFF)
+                    for relay in RELAY.values():
+                        relay.off()
                 else:
                     logging.info("Waiting for disabling system")
 
@@ -157,7 +146,7 @@ async def start_webserver():
                     if "auto" in data["params"]:
                         assert isinstance(data["params"]["auto"], bool)
                     if "telescope" in data["params"]:
-                        assert set(data["params"]["telescope"]) <= set(RELAY.values())
+                        assert set(data["params"]["telescope"]) <= set(RELAY)
                         for telescope in data["params"]["telescope"]:
                             assert isinstance(data["params"]["telescope"][telescope], bool)
                 elif data["cmd"] == "status":
@@ -172,9 +161,9 @@ async def start_webserver():
                 if "telescope" in data["params"]:
                     if AUTO_UPDATE:
                         return web.json_response({"rsp": "Error: controller in automatic mode"}, headers=headers)
-                    for pin, telescope in RELAY.items():
+                    for telescope, relay in RELAY.items():
                         if telescope in data["params"]["telescope"]:
-                            GPIO.output(pin, ON if data["params"]["telescope"][telescope] else OFF)
+                            (relay.on if data["params"]["telescope"][telescope] else relay.off)()
                 return web.json_response({"rsp": "done"}, headers=headers)
             # status
             elif data["cmd"] == "status":
@@ -182,7 +171,7 @@ async def start_webserver():
                     "rsp": {
                         "auto": AUTO_UPDATE,
                         "telescope": {
-                            telescope: STATUS[GPIO.input(pin)] for pin, telescope in RELAY.items()
+                            telescope: relay.is_active for telescope, relay in RELAY.items()
                         }
                     }
                 }
@@ -210,34 +199,23 @@ async def start_webserver():
 
 
 #####################################################################
-# SCHEDULER
+# UPDATER (get meteo data and update dew heater)
 
 
-async def start_scheduler():
-
-    scheduler = AsyncIOScheduler(timezone=utc)
-
-    # add update job
-    scheduler.add_job(update_status, "cron", minute="5,15,25,35,45,55", next_run_time=datetime.now())
-
-    # start scheduler
-    scheduler.start()
-
-    # sleep forever
+async def start_updater():
     while True:
-        await asyncio.sleep(3600)
+        await update_status()
+        await asyncio.sleep(300)
 
 
 #####################################################################
 
 
 async def main():
-    await asyncio.gather(start_webserver(), start_scheduler())
+    await asyncio.gather(start_webserver(), start_updater())
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         logging.info("Interrupt detected, exit")
-    # clean GPIO
-    GPIO.cleanup()

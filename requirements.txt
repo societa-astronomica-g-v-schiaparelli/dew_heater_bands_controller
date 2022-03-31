@@ -3,7 +3,7 @@
 # Paolo Galli <paolo97gll@gmail.com>
 
 aiohttp[speedups] == 3.8.1
-apscheduler == 3.9.1
+gpiozero == 1.6.2
 numpy == 1.22.3
 RPi.GPIO == 0.7.1
 skyfield == 1.42
