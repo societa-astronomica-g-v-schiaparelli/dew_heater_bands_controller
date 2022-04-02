@@ -50,7 +50,7 @@ sun_is_up = skyfield.almanac.sunrise_sunset(skyfield.api.load("de421.bsp"), loca
 
 
 async def get_meteo_data() -> tuple[float]:
-    """ Function to get temperature and humidity at the telescope location."""
+    """ Function to get temperature and humidity at the telescope location. """
     async with ClientSession() as session:
         async with session.get("https://astrogeo.va.it/data/stazioni/cdf.json") as resp:
             meteo_data = await resp.json()
