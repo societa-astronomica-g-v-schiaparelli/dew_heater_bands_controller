@@ -21,7 +21,7 @@ The code is completely asynchronous and consists of two parts:
 
 - **Web server**, developed with the [aiohttp](https://pypi.org/project/aiohttp/) library, by default active on port `8001`.
 
-- **Scheduler**, developed with the [APScheduler](https://pypi.org/project/APScheduler/) library, for the management of the bands, executed at minute 5, 15, 25, 35, 45 and 55 of every hour. The behavior is based both on the time of sunrise and sunset of the Sun (through the [skyfield](https://pypi.org/project/skyfield/) library) and on the weather conditions (through the usage of data from the weather station at the observatory). Thresholds are set to better manage the switches.
+- **Updater** for the management of the bands, executed every five minutes. The behavior is based both on the time of sunrise and sunset of the Sun (through the [skyfield](https://pypi.org/project/skyfield/) library) and on the weather conditions (through the usage of data from the weather station at the observatory). Thresholds are set to better manage the switches. The bands management is done with the [gpiozero](https://pypi.org/project/gpiozero/) library.
 
 ## API description
 
@@ -100,7 +100,7 @@ The code uses the [dew point](https://en.wikipedia.org/wiki/Dew_point) to automa
 
 ```python
 async def get_meteo_data() -> tuple[float]:
-    """ Function to get temperature and humidity at the telescope location."""
+    """ Function to get temperature and humidity at the telescope location. """
     # implement here your code to retrive weather parameters
     ...
     # then return temperature and humidity
