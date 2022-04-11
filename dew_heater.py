@@ -6,7 +6,6 @@
 
 
 import asyncio
-import json
 import logging
 import os
 from datetime import datetime, timedelta
@@ -14,6 +13,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import skyfield.almanac
 import skyfield.api
+import ujson
 from aiohttp import ClientSession, web
 from gpiozero import DigitalOutputDevice
 
@@ -22,18 +22,39 @@ from gpiozero import DigitalOutputDevice
 # BASIC CONFIGURATION
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
+logging_format = "[%(asctime)s] (%(levelname)s) %(module)s - %(funcName)s: %(message)s"
+logging.basicConfig(level=logging.INFO, format=logging_format)
+
+class ColoredFormatter(logging.Formatter):
+    bold_blue = "\x1b[34;1m"
+    grey = "\x1b[37;20m"
+    green = "\x1b[32;20m"
+    yellow = "\x1b[33;20m"
+    red = "\x1b[31;20m"
+    bold_red = "\x1b[31;1m"
+    reset = "\x1b[0m"
+    DEFAUTL_FORMATTER = logging.Formatter(logging_format)
+    FORMATTERS = {
+        1: logging.Formatter(bold_blue + logging_format + reset),
+        logging.DEBUG: logging.Formatter(grey + logging_format + reset),
+        logging.INFO: logging.Formatter(green + logging_format + reset),
+        logging.WARNING: logging.Formatter(yellow + logging_format + reset),
+        logging.ERROR: logging.Formatter(red + logging_format + reset),
+        logging.CRITICAL: logging.Formatter(bold_red + logging_format + reset)
+    }
+    def format(self, record: logging.LogRecord) -> str:
+        return self.FORMATTERS.get(record.levelno, self.DEFAUTL_FORMATTER).format(record)
+
+(logger := logging.getLogger(__name__)).setLevel(1)
+logger.propagate = False
+(logger_handler := logging.StreamHandler()).setFormatter(ColoredFormatter())
+logger.addHandler(logger_handler)
 
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
 # default to auto handle
 AUTO_UPDATE = True
 
-# relay devices
 RELAY = {
     "main":  DigitalOutputDevice(pin="GPIO2", active_high=False),
     "guide": DigitalOutputDevice(pin="GPIO3", active_high=False)
@@ -53,7 +74,7 @@ async def get_meteo_data() -> tuple[float]:
     """ Function to get temperature and humidity at the telescope location. """
     async with ClientSession() as session:
         async with session.get("https://astrogeo.va.it/data/stazioni/cdf.json") as resp:
-            meteo_data = await resp.json()
+            meteo_data = await resp.json(loads=ujson.loads)
     # get temperature and humidity
     return float(meteo_data["tempcorr"]), float(meteo_data["rhcorr"])
 
@@ -65,53 +86,55 @@ async def get_meteo_data() -> tuple[float]:
 TEMPERATURE_THRESHOLD = 4
 TIME_THRESHOLD = 30*60
 DATETIME = datetime.now() - timedelta(seconds=TIME_THRESHOLD+1)
+UPDATER_LOCK = asyncio.Lock()
 
-async def update_status():
+async def update_status() -> None:
     global DATETIME
     if AUTO_UPDATE:
-        if sun_is_up(ts_skyfield.now()):
-            logging.info("System disabled (daily hours)")
-            for relay in RELAY.values():
-                relay.off()
-        else:
-            logging.info("Starting auto update routine")
-            try:
-                temperature, humidity = await get_meteo_data()
-                # compute dewpoint
-                a, m, Tn = 6.116441, 7.591386, 240.7263
-                Pws = a * 10**(m * temperature / (temperature + Tn))
-                Pw = Pws * humidity / 100
-                dew_point = round(Tn / ((m / np.log10(Pw / a)) - 1), 1)
-            except Exception as e:
-                logging.exception(e)
-                logging.info("System disabled (error retriving parameters)")
+        async with UPDATER_LOCK:
+            if sun_is_up(ts_skyfield.now()):
+                logger.info("System disabled (daily hours)")
                 for relay in RELAY.values():
                     relay.off()
             else:
-                logging.info(f"Temperature: {temperature} °C, Dew Point: {dew_point} °C")
-                delta = temperature - dew_point
-                if delta < TEMPERATURE_THRESHOLD:
-                    logging.info("System enabled")
-                    DATETIME = datetime.now()
-                    for relay in RELAY.values():
-                        relay.on()
-                elif delta > TEMPERATURE_THRESHOLD and (datetime.now() - DATETIME).seconds > TIME_THRESHOLD:
-                    logging.info("System disabled")
+                logger.info("Starting auto update routine")
+                try:
+                    temperature, humidity = await get_meteo_data()
+                    # compute dewpoint
+                    a, m, Tn = 6.116441, 7.591386, 240.7263
+                    Pws = a * 10**(m * temperature / (temperature + Tn))
+                    Pw = Pws * humidity / 100
+                    dew_point = round(Tn / ((m / np.log10(Pw / a)) - 1), 1)
+                except Exception as e:
+                    logger.exception(e)
+                    logger.info("System disabled (error retriving parameters)")
                     for relay in RELAY.values():
                         relay.off()
                 else:
-                    logging.info("Waiting for disabling system")
+                    logger.info(f"Temperature: {temperature} °C, Dew Point: {dew_point} °C")
+                    delta = temperature - dew_point
+                    if delta < TEMPERATURE_THRESHOLD:
+                        logger.info("System enabled")
+                        DATETIME = datetime.now()
+                        for relay in RELAY.values():
+                            relay.on()
+                    elif delta > TEMPERATURE_THRESHOLD and (datetime.now() - DATETIME).seconds > TIME_THRESHOLD:
+                        logger.info("System disabled")
+                        for relay in RELAY.values():
+                            relay.off()
+                    else:
+                        logger.info("Waiting for disabling system")
 
 
 #####################################################################
 # WEBSERVER
 
 
-async def start_webserver():
+async def task_webserver() -> None:
 
     routes = web.RouteTableDef()
 
-    def get_language(request: web.Request):
+    def get_language(request: web.Request) -> str:
         try:
             lang = request.headers["Accept-Language"].split(",")[0].split(";")[0].split("-")[0]
             return "it" if lang == "it" else "en"
@@ -119,17 +142,17 @@ async def start_webserver():
             return "en"
 
     @routes.get("/")
-    async def _(request: web.Request):
+    async def webserver_route_root(request: web.Request):
         return web.FileResponse(f"{SCRIPT_PATH}/html/{get_language(request)}/index.html")
 
     @routes.get("/static/{file}")
-    async def _(request: web.Request):
+    async def webserver_route_static(request: web.Request):
         lang_path = f"{SCRIPT_PATH}/html/{get_language(request)}/{request.match_info['file']}"
         common_path = f"{SCRIPT_PATH}/html/common/{request.match_info['file']}"
         return web.FileResponse(lang_path if os.path.exists(lang_path) else common_path)
 
     @routes.get("/api")
-    async def _(request: web.Request):
+    async def webserver_route_api(request: web.Request):
         global AUTO_UPDATE
         params = request.rel_url.query
         headers = {"Access-Control-Allow-Origin": "*"}
@@ -137,7 +160,7 @@ async def start_webserver():
         if "json" in params:
             # try parse and check syntax
             try:
-                data = json.loads(params["json"])
+                data = ujson.loads(params["json"])
                 assert "cmd" in data
                 assert data["cmd"] in ("set", "status")
                 if data["cmd"] == "set":
@@ -152,19 +175,22 @@ async def start_webserver():
                 elif data["cmd"] == "status":
                     assert "params" not in data
             except Exception:
-                return web.json_response({"rsp": "Error: wrong json format"}, status=400, headers=headers)
+                return web.json_response({"rsp": "Error: wrong json format"}, status=400, headers=headers, dumps=ujson.dumps)
             # set
             if data["cmd"] == "set":
                 if "auto" in data["params"]:
                     AUTO_UPDATE = data["params"]["auto"]
+                    logger.info(f"Auto update {'enabled' if AUTO_UPDATE else 'disabled'}")
                     await update_status()
                 if "telescope" in data["params"]:
                     if AUTO_UPDATE:
-                        return web.json_response({"rsp": "Error: controller in automatic mode"}, headers=headers)
+                        logger.error("Controller in automatic mode, enable manual mode first")
+                        return web.json_response({"rsp": "Error: controller in automatic mode, enable manual mode first"}, headers=headers, dumps=ujson.dumps)
                     for telescope, relay in RELAY.items():
                         if telescope in data["params"]["telescope"]:
+                            logger.info(f"{telescope.capitalize()} {'enabled' if data['params']['telescope'][telescope] else 'disabled'}")
                             (relay.on if data["params"]["telescope"][telescope] else relay.off)()
-                return web.json_response({"rsp": "done"}, headers=headers)
+                return web.json_response({"rsp": "done"}, headers=headers, dumps=ujson.dumps)
             # status
             elif data["cmd"] == "status":
                 data = {
@@ -175,13 +201,13 @@ async def start_webserver():
                         }
                     }
                 }
-                return web.json_response(data, headers=headers)
+                return web.json_response(data, headers=headers, dumps=ujson.dumps)
             # command error
             else:
-                return web.json_response({"rsp": "Error: unknown request"}, status=400, headers=headers)
+                return web.json_response({"rsp": "Error: unknown request"}, status=400, headers=headers, dumps=ujson.dumps)
         # param error
         else:
-            return web.json_response({"rsp": "Error: unknown params"}, status=400, headers=headers)
+            return web.json_response({"rsp": "Error: unknown params"}, status=400, headers=headers, dumps=ujson.dumps)
 
     # setup application
     webserver = web.Application()
@@ -192,6 +218,7 @@ async def start_webserver():
     await runner.setup()
     site = web.TCPSite(runner, port=8001)
     await site.start()
+    logger.info("Webserver started!")
 
     # sleep forever
     while True:
@@ -202,20 +229,25 @@ async def start_webserver():
 # UPDATER (get meteo data and update dew heater)
 
 
-async def start_updater():
+async def task_updater() -> None:
+    logger.info("Updater task started!")
     while True:
         await update_status()
         await asyncio.sleep(300)
+    # wrong exit
+    logger.critical("Unexpected task exit, aborting")
+    exit(1)
 
 
 #####################################################################
 
 
 async def main():
-    await asyncio.gather(start_webserver(), start_updater())
+    await asyncio.gather(task_webserver(), task_updater())
 
 if __name__ == "__main__":
     try:
+        logger.log(1, "[MAIN] Starting app: dew_heater")
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logging.info("Interrupt detected, exit")
+        logger.log(1, "[MAIN] Interrupt detected, exit")
