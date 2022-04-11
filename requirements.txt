@@ -7,3 +7,4 @@ gpiozero == 1.6.2
 numpy == 1.22.3
 RPi.GPIO == 0.7.1
 skyfield == 1.42
+ujson == 5.2.0
