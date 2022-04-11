@@ -1,8 +1,8 @@
 # RCM-dew_heater
 
-_Remotizzazione Cupola Mascioni - Script and webserver to control the dew heater bands_
+_Remotizzazione Cupola Mascioni - Script and webserver to control dew heater bands_
 
-The controller is a python script meant to run on an RPi and use GPIOs to control a relay board with two outputs. The two relays are connected to the two dew heaters (one for the main telescope and one for the guide telescope) and control their powering.
+The controller is a python script meant to run on an RPi and use GPIOs to control a relay board with two outputs. The two relays are connected to two custom dew heater bands ([DIY, see here](http://www.astrodeep.com/25-come-costruire-delle-fasce-anticondensa.html), one for the main telescope and one for the guide telescope) and control their powering.
 
 The relays can be controlled in two ways:
 
