@@ -96,10 +96,10 @@ Examples:
 
 ## Get meteo data for the dew point value
 
-The code uses the [dew point](https://en.wikipedia.org/wiki/Dew_point) to automatically manage the bands; however, the dew point depends on the observing site location. The controller uses the data from the weather station at our observatory, but if you want to use your own data, fill the following template and replace the original code.
+The code uses the [dew point](https://en.wikipedia.org/wiki/Dew_point) to automatically manage the bands; however, the dew point depends on the observing site location. The controller uses the data from the weather station at our observatory, but if you want to use your own data, fill the following template and replace the original code in the `DewHeaterHandler` class.
 
 ```python
-async def get_meteo_data() -> tuple[float]:
+async def _get_meteo_data(self) -> tuple[float]:
     """ Function to get temperature and humidity at the telescope location. """
     # implement here your code to retrive weather parameters
     ...
