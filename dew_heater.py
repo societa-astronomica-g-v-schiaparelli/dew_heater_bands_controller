@@ -97,10 +97,6 @@ class DewHeaterHandler():
     def relays(self):
         return self._relays
 
-    @relays.setter
-    def relays(self, value):
-        raise AttributeError("Property is readonly")
-
     async def _get_meteo_data(self) -> tuple[float]:
         """ Function to get temperature and humidity at the telescope location. """
         async with ClientSession(timeout=ClientTimeout(total=5)) as session:
