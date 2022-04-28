@@ -58,6 +58,11 @@ logger.addHandler(logger_handler)
 
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
 
+relays = {
+    "main":  DigitalOutputDevice(pin="GPIO3", active_high=False),
+    "guide": DigitalOutputDevice(pin="GPIO2", active_high=False)
+}
+
 
 #####################################################################
 # Updater
@@ -139,10 +144,6 @@ class DewHeaterHandler():
                         else:
                             logger.info("Waiting for disabling system")
 
-relays = {
-    "main":  DigitalOutputDevice(pin="GPIO2", active_high=False),
-    "guide": DigitalOutputDevice(pin="GPIO3", active_high=False)
-}
 updater = DewHeaterHandler(relays, 45.86833333, 8.77055556)
 
 
