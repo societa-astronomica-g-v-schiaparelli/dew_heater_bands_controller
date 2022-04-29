@@ -76,8 +76,9 @@ class DewHeaterHandler():
     def __init__(
         self,
         relays: dict[str, DigitalOutputDevice],
-        latitude: float,
-        longitude: float,
+        site_latitude: float,
+        site_longitude: float,
+        site_elevation: float,
         auto_update: bool = True,
         temp_threshold: float = 4,
         time_threshold: int = 1800
@@ -86,8 +87,8 @@ class DewHeaterHandler():
         self.auto_update = auto_update
         # setup location for Sun altitude
         self._ts_skyfield = skyfield.api.load.timescale()
-        self._location_skyfield = skyfield.api.wgs84.latlon(latitude, longitude)
-        self._sun_is_up = skyfield.almanac.sunrise_sunset(skyfield.api.load("de421.bsp"), self._location_skyfield)
+        self._site = skyfield.api.wgs84.latlon(site_latitude, site_longitude, site_elevation)
+        self._sun_is_up = skyfield.almanac.sunrise_sunset(skyfield.api.load("de421.bsp"), self._site)
         # setup threshold
         self._temp_threshold = temp_threshold
         self._time_threshold = time_threshold
@@ -140,7 +141,7 @@ class DewHeaterHandler():
                         else:
                             logger.info("Waiting for disabling system")
 
-updater = DewHeaterHandler(relays, 45.86833333, 8.77055556)
+updater = DewHeaterHandler(relays, 45.86833333, 8.77055556, 1226)
 
 
 #####################################################################
