@@ -73,16 +73,9 @@ class DewHeaterHandler():
 
     _updater_lock = asyncio.Lock()
 
-    def __init__(
-        self,
-        relays: dict[str, DigitalOutputDevice],
-        site_latitude: float,
-        site_longitude: float,
-        site_elevation: float,
-        auto_update: bool = True,
-        temp_threshold: float = 4,
-        time_threshold: int = 1800
-    ) -> None:
+    def __init__(self, relays: dict[str, DigitalOutputDevice], site_latitude: float,
+                 site_longitude: float, site_elevation: float, auto_update: bool = True,
+                 temp_threshold: float = 4, time_threshold: int = 1800) -> None:
         self._relays = relays
         self.auto_update = auto_update
         # setup location for Sun altitude
@@ -110,8 +103,9 @@ class DewHeaterHandler():
             async with self._updater_lock:
                 if self._sun_is_up(self._ts_skyfield.now()):
                     logger.info("System disabled (daily hours)")
-                    for relay in self._relays.values():
-                        relay.off()
+                    for relay in self.relays.values():
+                        if relay.is_active:
+                            relay.off()
                 else:
                     logger.info("Starting auto update routine")
                     try:
@@ -124,20 +118,23 @@ class DewHeaterHandler():
                     except Exception as e:
                         logger.exception(e)
                         logger.info("System disabled (error retriving parameters)")
-                        for relay in self._relays.values():
-                            relay.off()
+                        for relay in self.relays.values():
+                            if relay.is_active:
+                                relay.off()
                     else:
                         logger.info(f"Temperature: {temperature} °C, Dew Point: {dew_point} °C")
                         delta = temperature - dew_point
                         if delta < self._temp_threshold:
                             logger.info("System enabled")
                             self._time = datetime.now()
-                            for relay in self._relays.values():
-                                relay.on()
+                            for relay in self.relays.values():
+                                if not relay.is_active:
+                                    relay.on()
                         elif delta > self._temp_threshold and (datetime.now() - self._time).seconds > self._time_threshold:
                             logger.info("System disabled")
-                            for relay in self._relays.values():
-                                relay.off()
+                            for relay in self.relays.values():
+                                if relay.is_active:
+                                    relay.off()
                         else:
                             logger.info("Waiting for disabling system")
 
