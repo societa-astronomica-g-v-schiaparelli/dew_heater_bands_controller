@@ -14,6 +14,7 @@ import numpy as np
 import skyfield.almanac
 import skyfield.api
 import ujson
+import uvloop
 from aiohttp import ClientSession, ClientTimeout, web
 from gpiozero import DigitalOutputDevice
 
@@ -65,7 +66,7 @@ relays = {
 
 
 #####################################################################
-# Updater
+# UPDATER
 
 
 class DewHeaterHandler():
@@ -252,6 +253,7 @@ async def main():
 if __name__ == "__main__":
     try:
         logger.log(1, "[MAIN] Starting app: dew_heater")
+        uvloop.install()
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         logger.log(1, "[MAIN] Interrupt detected, exit")

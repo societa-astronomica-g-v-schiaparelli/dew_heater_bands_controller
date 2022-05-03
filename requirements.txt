@@ -8,3 +8,4 @@ numpy == 1.22.3
 RPi.GPIO == 0.7.1
 skyfield == 1.42
 ujson == 5.2.0
+uvloop == 0.16.0
