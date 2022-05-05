@@ -114,7 +114,7 @@ For periodic status fetching, it's recommended to use the server-sent events (SS
 /status-sse
 ```
 
-Each message sent by this API is the same as the response of the normal [status](#status-of-the-tracking-system) API.
+Each message sent by this API is the same as the response of the normal [status](#status-of-the-bands) API.
 
 ## Get meteo data for the dew point value
 
