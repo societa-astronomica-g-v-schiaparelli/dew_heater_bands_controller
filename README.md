@@ -2,6 +2,18 @@
 
 _Remotizzazione Cupola Mascioni - Script and webserver to control dew heater bands_
 
+- [RCM-dew_heater](#rcm-dew_heater)
+  - [Project description](#project-description)
+  - [Code structure](#code-structure)
+  - [API description](#api-description)
+    - [Changing the setting of the bands](#changing-the-setting-of-the-bands)
+    - [Status of the bands](#status-of-the-bands)
+  - [SSE API description](#sse-api-description)
+  - [Get meteo data for the dew point value](#get-meteo-data-for-the-dew-point-value)
+  - [Prerequisites, installation and detail of the implementation in Mascioni dome](#prerequisites-installation-and-detail-of-the-implementation-in-mascioni-dome)
+
+## Project description
+
 The controller is a python script meant to run on an RPi and use GPIOs to control a relay board with two outputs. The two relays are connected to two custom dew heater bands ([DIY, see here](http://www.astrodeep.com/25-come-costruire-delle-fasce-anticondensa.html), one for the main telescope and one for the guide telescope) and control their powering.
 
 The relays can be controlled in two ways:
@@ -19,7 +31,7 @@ You can interact using:
 
 The code is completely asynchronous and consists of two parts:
 
-- **Web server**, developed with the [aiohttp](https://pypi.org/project/aiohttp/) library, by default active on port `8001`.
+- **Web server**, developed with the [aiohttp](https://pypi.org/project/aiohttp/) library, by default active on port `8001`; server-sent events implemented with the [aiohttp-sse](https://pypi.org/project/aiohttp_sse/) library.
 
 - **Updater** for the management of the bands, executed every five minutes. The behavior is based both on the time of sunrise and sunset of the Sun (through the [skyfield](https://pypi.org/project/skyfield/) library) and on the weather conditions (through the usage of data from the weather station at the observatory). Thresholds are set to better manage the switches. The bands management is done with the [gpiozero](https://pypi.org/project/gpiozero/) library.
 
@@ -93,6 +105,16 @@ Examples:
   }
 }
 ```
+
+## SSE API description
+
+For periodic status fetching, it's recommended to use the server-sent events (SSE) API. It's way more efficient, since the server will push an update to the client only if there is a change in the status.
+
+```
+/status-sse
+```
+
+Each message sent by this API is the same as the response of the normal [status](#status-of-the-tracking-system) API.
 
 ## Get meteo data for the dew point value
 

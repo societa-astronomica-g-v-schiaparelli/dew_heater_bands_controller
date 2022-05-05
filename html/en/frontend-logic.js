@@ -5,51 +5,50 @@
 const UPDATE_TIME = 5000;
 
 function start() {
-    setTimeout(getStatus, 0);
-    setInterval(getStatus, UPDATE_TIME);
-}
-
-function getStatus() {
-    let request = new Request(`api?json=${encodeURIComponent(JSON.stringify({ "cmd": "status" }))}`);
-    fetchTimeout(request)
-        .then(rsp => {
-            // update page
-            document.getElementById("auto").innerHTML = `Automatic mode: ${rsp["auto"] ? "ON" : "OFF"}`;
-            document.getElementById("input-auto").value = `Click for ${rsp["auto"] ? "manual" : "automatic"} mode`;
-            document.getElementById("input-auto").disabled = false;
-            document.getElementById("main").innerHTML = `Main telescope: ${rsp["telescope"]["main"] ? "ON" : "OFF"}`;
-            document.getElementById("input-main").className = rsp["telescope"]["main"] ? "green" : "red";
-            document.getElementById("input-main").value = rsp["auto"] ? `Heater ${rsp["telescope"]["main"] ? "on" : "off"}` : `Click to ${rsp["telescope"]["main"] ? "off" : "on"}`;
-            document.getElementById("input-main").disabled = rsp["auto"];
-            document.getElementById("guide").innerHTML = `Guide telescope: ${rsp["telescope"]["guide"] ? "ON" : "OFF"}`;
-            document.getElementById("input-guide").className = rsp["telescope"]["guide"] ? "green" : "red";
-            document.getElementById("input-guide").value = rsp["auto"] ? `Heater ${rsp["telescope"]["guide"] ? "on" : "off"}` : `Click to ${rsp["telescope"]["guide"] ? "off" : "on"}`;
-            document.getElementById("input-guide").disabled = rsp["auto"];
-        })
-        .catch(error => {
-            console.trace(`An error has occured: ${error.message}`);
-            // update page with default
-            document.getElementById("auto").innerHTML = "Automatic mode: ND";
-            document.getElementById("input-auto").value = "Unavailable";
-            document.getElementById("input-auto").disabled = true;
-            document.getElementById("main").innerHTML = "Main telescope: ND";
-            document.getElementById("input-main").className = "gray";
-            document.getElementById("input-main").value = "Unavailable";
-            document.getElementById("input-main").disabled = true;
-            document.getElementById("guide").innerHTML = "Guide telescope: ND";
-            document.getElementById("input-guide").className = "gray";
-            document.getElementById("input-guide").value = "Unavailable";
-            document.getElementById("input-guide").disabled = true;
-        });
+    const source = new ReconnectingEventSource("status-sse");
+    source.onopen = function (e) {
+        console.log("Connection ok, start receiving updates.");
+    }
+    source.onmessage = function (e) {
+        console.log("New update received!");
+        const rsp = JSON.parse(e.data);
+        document.getElementById("auto").innerText = `Automatic mode: ${rsp["auto"] ? "ON" : "OFF"}`;
+        document.getElementById("input-auto").value = `Click for ${rsp["auto"] ? "manual" : "automatic"} mode`;
+        document.getElementById("input-auto").disabled = false;
+        document.getElementById("main").innerText = `Main telescope: ${rsp["telescope"]["main"] ? "ON" : "OFF"}`;
+        document.getElementById("input-main").className = rsp["telescope"]["main"] ? "green" : "red";
+        document.getElementById("input-main").value = rsp["auto"] ? `Heater ${rsp["telescope"]["main"] ? "on" : "off"}` : `Click to ${rsp["telescope"]["main"] ? "off" : "on"}`;
+        document.getElementById("input-main").disabled = rsp["auto"];
+        document.getElementById("guide").innerText = `Guide telescope: ${rsp["telescope"]["guide"] ? "ON" : "OFF"}`;
+        document.getElementById("input-guide").className = rsp["telescope"]["guide"] ? "green" : "red";
+        document.getElementById("input-guide").value = rsp["auto"] ? `Heater ${rsp["telescope"]["guide"] ? "on" : "off"}` : `Click to ${rsp["telescope"]["guide"] ? "off" : "on"}`;
+        document.getElementById("input-guide").disabled = rsp["auto"];
+    }
+    source.onerror = function (e) {
+        if (e.target.readyState != EventSource.OPEN) console.log("Disconnected, retry...");
+        else console.log("Error during response handling.");
+        document.getElementById("auto").innerText = "Automatic mode: ND";
+        document.getElementById("input-auto").value = "Unavailable";
+        document.getElementById("input-auto").disabled = true;
+        document.getElementById("main").innerText = "Main telescope: ND";
+        document.getElementById("input-main").className = "gray";
+        document.getElementById("input-main").value = "Unavailable";
+        document.getElementById("input-main").disabled = true;
+        document.getElementById("guide").innerText = "Guide telescope: ND";
+        document.getElementById("input-guide").className = "gray";
+        document.getElementById("input-guide").value = "Unavailable";
+        document.getElementById("input-guide").disabled = true;
+    }
 }
 
 function toggleMain() {
     // decide final status
-    let text = document.getElementById("main").innerHTML;
+    const text = document.getElementById("main").innerText;
+    let status;
     if (text == "Main telescope: ON") {
-        var status = false;
+        status = false;
     } else if (text == "Main telescope: OFF") {
-        var status = true;
+        status = true;
     } else {
         alert("Error: cannot send request.");
         return;
@@ -60,11 +59,12 @@ function toggleMain() {
 
 function toggleGuide() {
     // decide final status
-    let text = document.getElementById("guide").innerHTML;
+    const text = document.getElementById("guide").innerText;
+    let status;
     if (text == "Guide telescope: ON") {
-        var status = false;
+        status = false;
     } else if (text == "Guide telescope: OFF") {
-        var status = true;
+        status = true;
     } else {
         alert("Error: cannot send request.");
         return;
@@ -75,11 +75,12 @@ function toggleGuide() {
 
 function toggleAuto() {
     // decide final status
-    let text = document.getElementById("auto").innerHTML;
+    const text = document.getElementById("auto").innerText;
+    let status;
     if (text == "Automatic mode: ON") {
-        var status = false;
+        status = false;
     } else if (text == "Automatic mode: OFF") {
-        var status = true;
+        status = true;
     } else {
         alert("Error: cannot send request.");
         return;
@@ -89,11 +90,10 @@ function toggleAuto() {
 }
 
 function sendCommand(command) {
-    let request = new Request(`api?json=${encodeURIComponent(JSON.stringify(command))}`);
+    const request = new Request(`api?json=${encodeURIComponent(JSON.stringify(command))}`);
     fetchTimeout(request)
         .then(rsp => {
             if (rsp != "done") throw new Error(`Wrong response from backend: ${rsp}`);
-            getStatus();
         })
         .catch(error => {
             console.trace(`An error has occured: ${error.message}`);

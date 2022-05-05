@@ -8,6 +8,7 @@
 import asyncio
 import logging
 import os
+from copy import deepcopy
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -16,6 +17,7 @@ import skyfield.api
 import ujson
 import uvloop
 from aiohttp import ClientSession, ClientTimeout, web
+from aiohttp_sse import sse_response
 from gpiozero import DigitalOutputDevice
 
 
@@ -77,8 +79,9 @@ class DewHeaterHandler():
     def __init__(self, relays: dict[str, DigitalOutputDevice], site_latitude: float,
                  site_longitude: float, site_elevation: float, auto_update: bool = True,
                  temp_threshold: float = 4, time_threshold: int = 1800) -> None:
+        self._status = {"auto": auto_update}
         self._relays = relays
-        self.auto_update = auto_update
+        self._update_relay_status()
         # setup location for Sun altitude
         self._ts_skyfield = skyfield.api.load.timescale()
         self._site = skyfield.api.wgs84.latlon(site_latitude, site_longitude, site_elevation)
@@ -89,8 +92,33 @@ class DewHeaterHandler():
         self._time = datetime.now() - timedelta(seconds=self._time_threshold+1)
 
     @property
-    def relays(self):
+    def status(self) -> dict:
+        return self._status
+
+    @property
+    def auto_update(self) -> bool:
+        return self.status["auto"]
+
+    @auto_update.setter
+    def auto_update(self, value: bool) -> None:
+        self._status["auto"] = value
+
+    @property
+    def relays(self) -> dict[str, DigitalOutputDevice]:
         return self._relays
+
+    def _update_relay_status(self) -> None:
+        self._status.update({"telescope": {telescope: relay.is_active for telescope, relay in self.relays.items()}})
+
+    def relay_on(self, relay: str) -> None:
+        if not self.relays[relay].is_active:
+            self.relays[relay].on()
+            self._update_relay_status()
+
+    def relay_off(self, relay: str) -> None:
+        if self.relays[relay].is_active:
+            self.relays[relay].off()
+            self._update_relay_status()
 
     async def _get_meteo_data(self) -> tuple[float]:
         """ Function to get temperature and humidity at the telescope location. """
@@ -104,9 +132,8 @@ class DewHeaterHandler():
             async with self._updater_lock:
                 if self._sun_is_up(self._ts_skyfield.now()):
                     logger.info("System disabled (daily hours)")
-                    for relay in self.relays.values():
-                        if relay.is_active:
-                            relay.off()
+                    for telescope in self.relays:
+                        self.relay_off(telescope)
                 else:
                     logger.info("Starting auto update routine")
                     try:
@@ -119,23 +146,20 @@ class DewHeaterHandler():
                     except Exception as e:
                         logger.exception(e)
                         logger.info("System disabled (error retriving parameters)")
-                        for relay in self.relays.values():
-                            if relay.is_active:
-                                relay.off()
+                        for telescope in self.relays:
+                            self.relay_off(telescope)
                     else:
                         logger.info(f"Temperature: {temperature} °C, Dew Point: {dew_point} °C")
                         delta = temperature - dew_point
                         if delta < self._temp_threshold:
                             logger.info("System enabled")
                             self._time = datetime.now()
-                            for relay in self.relays.values():
-                                if not relay.is_active:
-                                    relay.on()
+                            for telescope in self.relays:
+                                self.relay_on(telescope)
                         elif delta > self._temp_threshold and (datetime.now() - self._time).seconds > self._time_threshold:
                             logger.info("System disabled")
-                            for relay in self.relays.values():
-                                if relay.is_active:
-                                    relay.off()
+                            for telescope in self.relays:
+                                self.relay_off(telescope)
                         else:
                             logger.info("Waiting for disabling system")
 
@@ -199,28 +223,31 @@ async def webserver_route_api(request: web.Request):
                 if updater.auto_update:
                     logger.error("Controller in automatic mode, enable manual mode first")
                     return web.json_response({"rsp": "Error: controller in automatic mode, enable manual mode first"}, headers=headers, dumps=ujson.dumps)
-                for telescope, relay in updater.relays.items():
+                for telescope in updater.relays:
                     if telescope in data["params"]["telescope"]:
                         logger.info(f"{telescope.capitalize()} {'enabled' if data['params']['telescope'][telescope] else 'disabled'}")
-                        (relay.on if data["params"]["telescope"][telescope] else relay.off)()
+                        (updater.relay_on if data["params"]["telescope"][telescope] else updater.relay_off)(telescope)
             return web.json_response({"rsp": "done"}, headers=headers, dumps=ujson.dumps)
         # status
         elif data["cmd"] == "status":
-            data = {
-                "rsp": {
-                    "auto": updater.auto_update,
-                    "telescope": {
-                        telescope: relay.is_active for telescope, relay in updater.relays.items()
-                    }
-                }
-            }
-            return web.json_response(data, headers=headers, dumps=ujson.dumps)
+            return web.json_response({"rsp": updater.status}, headers=headers, dumps=ujson.dumps)
         # command error
         else:
             return web.json_response({"rsp": "Error: unknown request"}, status=400, headers=headers, dumps=ujson.dumps)
     # param error
     else:
         return web.json_response({"rsp": "Error: unknown params"}, status=400, headers=headers, dumps=ujson.dumps)
+
+@routes.get("/status-sse")
+async def webserver_route_status_sse(request: web.Request):
+    async with sse_response(request) as resp:
+        last_status = {}
+        while True:
+            if updater.status != last_status:
+                await resp.send(ujson.dumps(updater.status))
+                last_status = deepcopy(updater.status)
+            await asyncio.sleep(0.1)
+    return resp
 
 
 #####################################################################
@@ -247,7 +274,7 @@ async def main():
     logger.info("Updater started!")
     while True:
         await updater.update_status()
-        await asyncio.sleep(300)
+        await asyncio.sleep(180)
 
 
 if __name__ == "__main__":

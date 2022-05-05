@@ -3,6 +3,7 @@
 # Paolo Galli <paolo97gll@gmail.com>
 
 aiohttp[speedups] == 3.8.1
+aiohttp-sse == 2.1.0
 gpiozero == 1.6.2
 numpy == 1.22.3
 RPi.GPIO == 0.7.1
