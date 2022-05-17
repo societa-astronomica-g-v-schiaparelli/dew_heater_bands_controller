@@ -1,8 +1,8 @@
-# RCM-dew_heater
+# dew_heater_bands_controller
 
-_Remotizzazione Cupola Mascioni - Script and webserver to control dew heater bands_
+DIY dew heater bands controller.
 
-- [RCM-dew_heater](#rcm-dew_heater)
+- [dew_heater_bands_controller](#dew_heater_bands_controller)
   - [Project description](#project-description)
   - [Code structure](#code-structure)
   - [API description](#api-description)
@@ -139,7 +139,7 @@ Install the following packages:
 sudo apt install python3-venv python3-dev python3-pip
 ```
 
-Create a virtual environment in the `RCM-dew_heater` folder and install the necessary packages:
+Create a virtual environment in the `dew_heater_bands_controller` folder and install the necessary packages:
 
 ```
 python3 -m venv venv
@@ -152,12 +152,12 @@ Service to automatically start the code (modify the paths according to what you 
 
 ```
 [Unit]
-Description=Script and webserver to control the dew heater bands
+Description=DIY dew heater bands controller
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/RCM-dew_heater
-ExecStart=/home/ubuntu/RCM-dew_heater/venv/bin/python3 /home/ubuntu/RCM-dew_heater/dew_heater.py
+WorkingDirectory=/home/ubuntu/dew_heater_bands_controller
+ExecStart=/home/ubuntu/dew_heater_bands_controller/venv/bin/python3 /home/ubuntu/dew_heater_bands_controller/dew_heater.py
 Restart=always
 RestartSec=3
 
