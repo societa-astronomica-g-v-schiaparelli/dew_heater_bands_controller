@@ -136,7 +136,7 @@ Tested on Raspberry Pi 4 with Ubuntu Server 20.04.
 Install the following packages:
 
 ```
-sudo apt install python3-venv python3-dev python3-pip
+sudo apt install python3-venv python3-dev python3-pip pkg-config
 ```
 
 Create a virtual environment in the `dew_heater_bands_controller` folder and install the necessary packages:
