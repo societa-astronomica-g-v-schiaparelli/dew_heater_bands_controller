@@ -131,7 +131,7 @@ async def _get_meteo_data(self) -> tuple[float]:
 
 ## Prerequisites, installation and detail of the implementation in Mascioni dome
 
-Tested on Raspberry Pi 4 with Ubuntu Server 20.04.
+Tested on Raspberry Pi 4 with Ubuntu Server 20.04 and Ubuntu Server 22.04.
 
 Install the following packages:
 
