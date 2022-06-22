@@ -251,6 +251,7 @@ async def webserver_route_status_sse(request: web.Request):
 
 
 #####################################################################
+# MAIN
 
 
 async def main():
@@ -277,10 +278,9 @@ async def main():
         await asyncio.sleep(180)
 
 
-if __name__ == "__main__":
-    try:
-        logger.log(1, "[MAIN] Starting app: dew_heater")
-        uvloop.install()
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        logger.log(1, "[MAIN] Interrupt detected, exit")
+try:
+    logger.log(1, "[MAIN] Starting app: dew_heater")
+    uvloop.install()
+    asyncio.run(main())
+except (KeyboardInterrupt, SystemExit):
+    logger.log(1, "[MAIN] Interrupt detected, exit")
