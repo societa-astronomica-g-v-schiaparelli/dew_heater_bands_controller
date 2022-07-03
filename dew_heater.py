@@ -43,7 +43,7 @@ class ColoredFormatter(logging.Formatter):
         }
         self._default_formatter = logging.Formatter(fmt)
         self._formatters = {
-            1: logging.Formatter(colors["bold_blue"] + fmt + colors["reset"]),
+            100: logging.Formatter(colors["bold_blue"] + fmt + colors["reset"]),
             logging.DEBUG: logging.Formatter(colors["grey"] + fmt + colors["reset"]),
             logging.INFO: logging.Formatter(colors["green"] + fmt + colors["reset"]),
             logging.WARNING: logging.Formatter(colors["yellow"] + fmt + colors["reset"]),
@@ -54,7 +54,7 @@ class ColoredFormatter(logging.Formatter):
     def format(self, record):
         return self._formatters.get(record.levelno, self._default_formatter).format(record)
 
-(logger := logging.getLogger(__name__)).setLevel(1)
+(logger := logging.getLogger(__name__)).setLevel(logging.INFO)
 logger.propagate = False
 (logger_handler := logging.StreamHandler()).setFormatter(ColoredFormatter(fmt=logging_format))
 logger.addHandler(logger_handler)
@@ -279,8 +279,8 @@ async def main():
 
 
 try:
-    logger.log(1, "[MAIN] Starting app: dew_heater")
+    logger.log(100, "[MAIN] Starting app: dew_heater")
     uvloop.install()
     asyncio.run(main())
 except (KeyboardInterrupt, SystemExit):
-    logger.log(1, "[MAIN] Interrupt detected, exit")
+    logger.log(100, "[MAIN] Interrupt detected, exit")
