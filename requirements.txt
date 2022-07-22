@@ -5,8 +5,8 @@
 aiohttp[speedups] == 3.8.1
 aiohttp-sse == 2.1.0
 gpiozero == 1.6.2
-numpy == 1.23
+numpy == 1.23.1
 RPi.GPIO == 0.7.1
-skyfield == 1.42
+skyfield == 1.43.1
 ujson == 5.4.0
 uvloop == 0.16.0
