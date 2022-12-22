@@ -1,0 +1,287 @@
+/* DEW HEATER (https://github.com/societa-astronomica-g-v-schiaparelli/dew_heater_bands_controller)
+ * Copyright (c) 2021-2022 Società Astronomica G.V. Schiaparelli
+ * Paolo Galli <paolo.galli@astrogeo.va.it>, Luca Ghirotto <luca.ghirotto@astrogeo.va.it>
+*/
+
+:root {
+    /* light */
+    --color-background: #EBECF0;
+    --color-shadow: #BABECC;
+    --color-shadow-light: #FFF;
+    --color-text-gray-1: #9498A3;
+    --color-text-gray-2: #7F838D;
+    /* dark */
+    --color-background-dark: #1C1D1E;
+    --color-shadow-dark: #070809;
+    --color-shadow-light-dark: #2A2A2B;
+    --color-text-gray-1-dark: #7a8188;
+    --color-text-gray-2-dark: #BBBDC8;
+}
+
+/* LAYOUT */
+
+body,
+html {
+    background-color: var(--color-background);
+}
+
+body,
+p,
+input,
+select,
+textarea,
+button {
+    font-family: sans-serif;
+    font-size: 16px;
+}
+
+div,
+p {
+    color: var(--color-shadow);
+    text-shadow: 1px 1px 1px var(--color-shadow-light);
+}
+
+label {
+    color: var(--color-text-gray-2);
+    display: block;
+    font-size: 19.2px;
+    margin-bottom: 24px;
+    text-shadow: 1px 1px 1px var(--color-shadow-light);
+    width: 100%;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0px 30px;
+    text-shadow: 1px 1px 1px var(--color-shadow-light);
+}
+
+li {
+    color: var(--color-text-gray-1);
+    text-shadow: 1px 1px 1px var(--color-shadow-light);
+}
+
+li+li,
+li+ul,
+ul+li {
+    margin-top: 15px;
+}
+
+form {
+    margin: 0 auto;
+    padding: 16px;
+    width: 90%;
+    min-width: 300px;
+    max-width: 350px;
+}
+
+.segment {
+    padding: 8px 0;
+    text-align: center;
+    margin-left: 12px;
+    margin-right: 12px;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 16px auto;
+}
+
+.column {
+    flex: 25%;
+}
+
+button,
+input,
+input[type=button] {
+    background-color: var(--color-background);
+    border-radius: 320px;
+    border: 0;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    outline: 0;
+    padding: 16px;
+    text-shadow: 1px 1px 1px var(--color-shadow-light);
+    white-space: pre-wrap;
+}
+
+input {
+    -webkit-appearance: none;
+    appearance: none;
+    box-shadow: inset 2px 2px 5px var(--color-shadow), inset -5px -5px 10px var(--color-shadow-light);
+    box-sizing: border-box;
+    margin-right: 8px;
+    transition: all 0.2s ease-in-out;
+    width: 100%;
+}
+
+input:focus {
+    box-shadow: inset 1px 1px 2px var(--color-shadow), inset -1px -1px 2px var(--color-shadow-light);
+}
+
+button,
+input[type=button] {
+    box-shadow: -4px -4px 12px var(--color-shadow-light), 4px 4px 12px var(--color-shadow);
+    color: var(--color-text-gray-2);
+    cursor: pointer;
+    display: block;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    width: 100%;
+}
+
+button[disabled],
+input[disabled][type=button] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+button:enabled:hover,
+input:enabled[type=button]:hover {
+    box-shadow: -2px -2px 5px #FFF, 2px 2px 5px var(--color-shadow);
+}
+
+button:enabled:active,
+input:enabled[type=button]:active {
+    box-shadow: inset 1px 1px 2px var(--color-shadow), inset -1px -1px 2px #FFF;
+}
+
+.red,
+button.red,
+input[type=button].red {
+    color: #AE1100;
+}
+
+.orange,
+button.orange,
+input[type=button].orange {
+    color: #CE9D32;
+}
+
+.green,
+button.green,
+input[type=button].green {
+    color: #009900;
+}
+
+button.gray,
+input[type=button].gray {
+    color: var(--color-text-gray-1);
+}
+
+.box {
+    align-items: center;
+    border-radius: 8px;
+    box-shadow: -4px -4px 12px var(--color-shadow-light), 4px 4px 12px var(--color-shadow);
+    color: var(--color-text-gray-1);
+    display: flex;
+    font-size: 16px;
+    font-weight: 400;
+    height: fit-content;
+    justify-content: center;
+    margin-bottom: 24px;
+    transition: all 0.2s ease-in-out;
+    width: 100%;
+    min-width: 300px;
+    max-width: 350px;
+}
+
+.input-group {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-evenly;
+    width: 100%;
+    margin-bottom: 18px;
+}
+
+/* DARK MODE */
+
+@media (prefers-color-scheme: dark) {
+
+    body,
+    html {
+        background-color: var(--color-background-dark);
+    }
+
+    div,
+    p {
+        color: var(--color-text-gray-1-dark);
+        text-shadow: 1px 1px 1px var(--color-shadow-dark);
+    }
+
+    label {
+        color: var(--color-text-gray-2-dark);
+        text-shadow: 1px 1px 1px var(--color-shadow-dark);
+    }
+
+    ul {
+        text-shadow: 1px 1px 1px var(--color-shadow-dark);
+    }
+
+    li {
+        color: var(--color-text-gray-1-dark);
+        text-shadow: 1px 1px 1px var(--color-shadow-dark);
+    }
+
+    button,
+    input,
+    input[type=button] {
+        background-color: var(--color-background-dark);
+        text-shadow: 1px 1px 1px var(--color-shadow-dark);
+    }
+
+    input {
+        box-shadow: inset 2px 2px 5px var(--color-shadow-dark), inset -5px -5px 10px var(--color-shadow-light-dark);
+    }
+
+    input:focus {
+        box-shadow: inset 1px 1px 2px var(--color-shadow-dark), inset -1px -1px 2px var(--color-shadow-light-dark);
+    }
+
+    button,
+    input[type=button] {
+        box-shadow: -4px -4px 12px var(--color-shadow-light-dark), 4px 4px 12px var(--color-shadow-dark);
+        color: var(--color-text-gray-2-dark);
+    }
+
+    button:enabled:hover,
+    input:enabled[type=button]:hover {
+        box-shadow: -2px -2px 5px var(--color-shadow-light-dark), 2px 2px 5px var(--color-shadow-dark);
+    }
+
+    button:enabled:active,
+    input:enabled[type=button]:active {
+        box-shadow: inset 1px 1px 2px var(--color-shadow-dark), inset -1px -1px 2px var(--color-shadow-light-dark);
+    }
+
+    .red,
+    button.red,
+    input[type=button].red {
+        color: #ad3427;
+    }
+
+    .orange,
+    button.orange,
+    input[type=button].orange {
+        color: #AD8227;
+    }
+
+    .green,
+    button.green,
+    input[type=button].green {
+        color: #4fa74c;
+    }
+
+    button.gray,
+    input[type=button].gray {
+        color: var(--color-text-gray-1-dark);
+    }
+
+    .box {
+        box-shadow: -4px -4px 12px var(--color-shadow-light-dark), 4px 4px 12px var(--color-shadow-dark);
+        color: var(--color-text-gray-2-dark);
+    }
+}

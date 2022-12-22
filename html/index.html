@@ -1,0 +1,40 @@
+<!--
+DEW HEATER (https://github.com/societa-astronomica-g-v-schiaparelli/dew_heater_bands_controller)
+Copyright (c) 2021-2022 Società Astronomica G.V. Schiaparelli
+Paolo Galli <paolo.galli@astrogeo.va.it>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Dew heater controller</title>
+    <link rel="stylesheet" href="static/style.css" type="text/css" media="screen">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="static/ReconnectingEventSource.min.js"></script>
+    <script src="static/frontend-logic.js"></script>
+</head>
+
+<body onload="start();">
+    <div class="segment">
+        <h1>Dew heater controller</h1>
+    </div>
+
+    <form>
+        <label><b>AUTOMATIC HANDLING STATUS</b></label>
+        <label id="auto" style="font-size: 16px;">Automatic mode: ND</label>
+        <input id="input-auto" class="gray" type="button" onclick="toggleAuto();" value="Unavailable" disabled>
+    </form>
+
+    <form>
+        <label><b>DEW HEATERS STATUS</b></label>
+        <label id="main" style="font-size: 16px;">Main telescope: ND</label>
+        <input id="input-main" class="gray" type="button" onclick="toggleMain();" value="Unavailable" disabled>
+        <br>
+        <label id="guide" style="font-size: 16px;">Guide telescope: ND</label>
+        <input id="input-guide" class="gray" type="button" onclick="toggleGuide();" value="Unavailable" disabled>
+    </form>
+</body>
+
+</html>
